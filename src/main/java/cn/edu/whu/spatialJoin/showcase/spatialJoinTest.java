@@ -180,7 +180,7 @@ public class spatialJoinTest
 
         // build local index;
         indexRDD.buildIndex(localIndexType, true);
-//        System.out.println("indexedRDD:"+indexRDD.indexedRDD.first());
+        System.out.println("[mylog]indexedRDD:"+indexRDD.indexedRDD.first());
         long endIndexT = System.currentTimeMillis();
         indexTime = endIndexT - endPartitionT;
 
