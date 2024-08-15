@@ -37,7 +37,12 @@ public class temp {
             double itemsPCCs = DataStatisticsUtils.getPearsonCorrelationScore(itemsNum,joinTime);
             System.out.println("itemsPCCs:"+itemsPCCs);
             System.out.println("alpha\tCIPCCs");
-            for (double alpha=0.0;alpha<=1;alpha+=0.001) {
+            for (double alpha=0.0;alpha<=0.1;alpha+=0.02) {
+                List<Double> CI = DataStatisticsUtils.combine(filterCost, refineCost, alpha);
+                double CIPCCs = DataStatisticsUtils.getPearsonCorrelationScore(CI,joinTime);
+                System.out.println(alpha+"\t"+CIPCCs);
+            }
+            for (double alpha=0.2;alpha<=1;alpha+=0.2) {
                 List<Double> CI = DataStatisticsUtils.combine(filterCost, refineCost, alpha);
                 double CIPCCs = DataStatisticsUtils.getPearsonCorrelationScore(CI,joinTime);
                 System.out.println(alpha+"\t"+CIPCCs);
