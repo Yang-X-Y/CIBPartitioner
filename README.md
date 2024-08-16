@@ -1,4 +1,5 @@
-##1 Datasets
+# CIBPartitioner
+## 1 Datasets
 
 Download datasets from https://star.cs.ucr.edu/.
 
@@ -13,11 +14,11 @@ Process datasets into the following format:`ID\tWKT`.
 
 For example: `1   POINT (26.0883793 44.4078777)`
 
-##2 Config
+## 2 Config
 
 Configuring the "config/partitionerTest.json" file.
 
 Configuring the "bin/partitionerTest.sh" file.
 
-##3 Execution
+## 3 Execution
 `bash ./bin/partitionerTest.sh ./config/partitionerTest.json`
