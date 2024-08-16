@@ -134,10 +134,6 @@ public class partitionerTest
         int loadParts=256;
         JSONObject jsonConf = JsonUtil.readLocalJSONFile(jsonFile);
         initConfig(jsonConf);
-        indexDataType = args[1].split(";")[0];
-        queryDataType = args[1].split(";")[1];
-        partitionerStr = args[2].split(";")[0];
-        partitionNum = Integer.parseInt(args[2].split(";")[1]);
         initIndexes();
         if (STRtree.class.getDeclaredMethod("getItemsNum")==null) throw new Exception("[mylog] strTree doesn't has getItemsNum method");
 
@@ -277,56 +273,24 @@ public class partitionerTest
 
     public static void resultStatistic(List results)
             throws Exception {
-        List<Double> itemsNum = new ArrayList<>();
-        List<Double> filterCost = new ArrayList<>();
-        List<Double> refineCost = new ArrayList<>();
         List<Double> trueCosts = new ArrayList<>();
-        double trueCostSum = 0.0;
         List<Double> estimatedCosts = new ArrayList<>();
-        double estimatedCostsSum = 0.0;
-        List<Double> filterTime = new ArrayList<>();
-        List<Double> toRefineNum = new ArrayList<>();
-        List<Double> refineTime = new ArrayList<>();
         List<Double> joinTimes = new ArrayList<>();
-        List<Tuple4> partResults = new ArrayList<>();
-        List<Tuple2> SEResults = new ArrayList<>();
         for (Object result:results) {
             PartResultStatistic r = (PartResultStatistic) result;
-            itemsNum.add((double) (r.indexedItemsNum+ r.queryItemsNum));
             double partFilterCost =  r.filterCost;
             double partRefineCost = r.refineCost;
-            filterCost.add(partFilterCost);
-            refineCost.add(partRefineCost);
             double partTrueCost=((1-alpha)*partFilterCost+alpha*partRefineCost);
             trueCosts.add(partTrueCost);
-            trueCostSum+=partTrueCost;
             estimatedCosts.add(r.estimatedCost);
-            estimatedCostsSum+=(r.estimatedCost);
-            filterTime.add((double) r.filterTime);
-            refineTime.add((double) r.refineTime);
-            toRefineNum.add((double) r.toRefineNum);
             joinTimes.add((double) r.joinTime);
             resultNum += r.resultNum;
-            partResults.add(new Tuple4<>(r.indexedItemsNum+r.queryItemsNum,r.filterCost,r.refineCost,r.joinTime));
-            SEResults.add(new Tuple2(partTrueCost,r.estimatedCost));
         }
 
-        double itemsNumCV = DataStatisticsUtils.getCoefficientVariation(itemsNum);
-        double estimatedCostCV = DataStatisticsUtils.getCoefficientVariation(estimatedCosts);
-        double trueCostCV = DataStatisticsUtils.getCoefficientVariation(trueCosts);
         joinTimeCV = DataStatisticsUtils.getCoefficientVariation(joinTimes);
         double r_CI_JT = DataStatisticsUtils.getPearsonCorrelationScore(trueCosts,joinTimes);
         double r_ECI_JT = DataStatisticsUtils.getPearsonCorrelationScore(estimatedCosts,joinTimes);
-        double r_N_JT = DataStatisticsUtils.getPearsonCorrelationScore(itemsNum,joinTimes);
-        double r_Nc_JT = DataStatisticsUtils.getPearsonCorrelationScore(toRefineNum,joinTimes);
         double r_CI_ECI = DataStatisticsUtils.getPearsonCorrelationScore(trueCosts,estimatedCosts);
-        double r_CI_N = DataStatisticsUtils.getPearsonCorrelationScore(trueCosts,itemsNum);
-        double r_CI_Nc = DataStatisticsUtils.getPearsonCorrelationScore(trueCosts,toRefineNum);
-        double r_ECI_N = DataStatisticsUtils.getPearsonCorrelationScore(estimatedCosts,itemsNum);
-        double r_ECI_Nc = DataStatisticsUtils.getPearsonCorrelationScore(estimatedCosts,toRefineNum);
-        double r_N_Nc = DataStatisticsUtils.getPearsonCorrelationScore(itemsNum,toRefineNum);
-        double filteringPCCs = DataStatisticsUtils.getPearsonCorrelationScore(filterCost,filterTime);
-        double refinementPCCs = DataStatisticsUtils.getPearsonCorrelationScore(refineCost,refineTime);
 
         String resultStr = ("************************ resultStatistic ************************"
                 + "\nindexDataType: " + indexDataType
@@ -346,50 +310,11 @@ public class partitionerTest
                 + "\ncacheTime: " + cacheTime + "ms"
                 + "\njoinTime: " + joinTime + "ms"
                 + "\njoinTimeCV: " + joinTimeCV
-                + "\nestimatedCostCV: " + estimatedCostCV
-                + "\ntrueCostCV: " + trueCostCV
-                + "\nitemsNumCV: " + itemsNumCV
                 + "\nr_CI_JT: " + r_CI_JT
                 + "\nr_ECI_JT: " + r_ECI_JT
-                + "\nr_N_JT: " + r_N_JT
-                + "\nr_Nc_JT: " + r_Nc_JT
-                + "\nr_CI_ECI: " + r_CI_ECI
-                + "\nr_CI_N: " + r_CI_N
-                + "\nr_CI_Nc: " + r_CI_Nc
-                + "\nr_ECI_N: " + r_ECI_N
-                + "\nr_ECI_Nc: " + r_ECI_Nc
-                + "\nr_N_Nc: " + r_N_Nc
-                + "\nfilteringPCCs: " + filteringPCCs
-                + "\nrefinementPCCs: " + refinementPCCs
-                + "\ntrueCostSum: " + trueCostSum
-                + "\nestimatedCostsSum: " + estimatedCostsSum
-                + "\nitemsNum\tfilterCost\trefineCost\tjoinTime\n " + partResults.stream().map(i->i._1()+"\t"+i._2()+"\t"+i._3()+"\t"+i._4()).collect(Collectors.joining("\n")));
-//                + "\njoinTimes:\n" + joinTimes.stream().map(i->i.toString()).collect(Collectors.joining("\n"))
-//                + "\nresultNum\titems\tjoinTime\n " + partResults.stream().map(i->i.a+"\t"+i.b+"\t"+i.c).collect(Collectors.joining("\n")));
-//                + "\ntrueCost\testimateCost: " + SEResults.stream().map(i->i.a+"\t"+i.b).collect(Collectors.joining("\n"))
-//                + "\njoinTimes:\n" + joinTimes.stream().map(i->i.toString()).collect(Collectors.joining("\n")));
+                + "\nr_CI_ECI: " + r_CI_ECI);
         System.out.println(resultStr);
-//        System.out.println("************trueCostJoinTimePCCs**********");
-//        costTimePCCsList.forEach(i->System.out.println(i.a+"\t"+i.b));
-//        SEResults.forEach(i->System.out.println(i.a+"\t"+i.b));
-//        double costTimePCCs = DataStatisticsUtils.getPearsonCorrelationScore(refineCost,estimatedCosts);
-//        double refinePCCs = DataStatisticsUtils.getPearsonCorrelationScore(refineCost,toRefineNum);
-//        double refinePCCs2 = DataStatisticsUtils.getPearsonCorrelationScore(refineCost,refineTime);
 
-//        System.out.println(costTimePCCs);
-//        System.out.println(refinePCCs);
-//        System.out.println(refinePCCs2);
-
-        SimpleDateFormat dataFormat = new SimpleDateFormat("MMddHHmm");
-        String timestamp = dataFormat.format(new Date());
-        if (partitionerStr.equals("CIBPartitioner")) {
-            filePath = "/home/yxy/CIBPartitioner/resultICDE/"+indexDataType+"-"+queryDataType+"-"+partitionerStr+"-"+localIndex+"-"+cellNum+"-"+partitionNum+"-"+timestamp+".txt";
-        } else {
-            filePath = "/home/yxy/CIBPartitioner/resultICDE/"+indexDataType+"-"+queryDataType+"-"+partitionerStr+"-"+localIndex+"-"+timestamp+".txt";
-        }
-        try (BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(filePath))) {
-            bufferedWriter.write(resultStr);
-        }
 
     }
 }

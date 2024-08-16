@@ -1,7 +1,7 @@
 {
   "//":"partitioner: quadTree/KDBTree/voronoi/CIBP;",
   "//": "localIndex: RTree/quadTree;",
-  "dataPath": "/home/yxy/data/spatialJoin/",
+  "dataPath": "your data path",
   "indexDataType": "parks",
   "queryDataType": "lakes",
   "spatialPredicate": "intersect",
