@@ -26,7 +26,10 @@ import cn.edu.whu.spatialJoin.joinJudgement.PartResultStatistic;
 import cn.edu.whu.spatialJoin.spatialOperator.JoinQuery;
 import cn.edu.whu.spatialJoin.spatialPartitioning.PartitionUtil;
 import cn.edu.whu.spatialJoin.spatialPartitioning.SpatialPartitioner;
-import cn.edu.whu.spatialJoin.spatialRDD.*;
+import cn.edu.whu.spatialJoin.spatialRDD.LineStringRDD;
+import cn.edu.whu.spatialJoin.spatialRDD.PointRDD;
+import cn.edu.whu.spatialJoin.spatialRDD.PolygonRDD;
+import cn.edu.whu.spatialJoin.spatialRDD.SpatialRDD;
 import cn.edu.whu.spatialJoin.utils.DataStatisticsUtils;
 import cn.edu.whu.spatialJoin.utils.JsonUtil;
 import com.alibaba.fastjson.JSONObject;
@@ -37,6 +40,7 @@ import org.apache.spark.storage.StorageLevel;
 import org.locationtech.jts.index.strtree.STRtree;
 import org.parboiled.common.Tuple2;
 import scala.Tuple4;
+
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.Serializable;
@@ -50,7 +54,7 @@ import java.util.stream.Collectors;
 /**
  * The Class Example.
  */
-public class spatialJoinTest
+public class partitionerTest
         implements Serializable {
 
     /**
@@ -61,7 +65,7 @@ public class spatialJoinTest
     /**
      * dataset location.
      */
-    static String homePath;
+    static String dataPath;
     static String poisPath;
     static String parksPath;
     static String lakesPath;
@@ -80,19 +84,14 @@ public class spatialJoinTest
 
     static double alpha;
 
-    static double indexDataSampleRate;
-    static double queryDataSampleRate;
-
     static String indexDataType;
 
     static String queryDataType;
 
     static String spatialPredicate;
 
-
     static String localIndex;
 
-    static boolean isCache;
     static boolean considerBoundaryIntersection=true;
     static boolean isPIP=false;
     static String partitionerStr;
@@ -121,7 +120,6 @@ public class spatialJoinTest
     static double joinTimeCV;
     static String filePath;
     static String partitionerSize;
-    static boolean isLocal = true;
 
     /**
      * The main method.
@@ -132,28 +130,16 @@ public class spatialJoinTest
 
 //        String jsonFile = args[0];
 //
-        String jsonFile;
-        if (args.length>0) {
-            isLocal = false;
-            jsonFile = args[0];
-        } else {
-            jsonFile = "D:\\code\\CIBPartitioner\\config\\spatialJoinTest.json";
-        }
-        int loadParts=5;
+        String jsonFile = args[0];
+        int loadParts=256;
         JSONObject jsonConf = JsonUtil.readLocalJSONFile(jsonFile);
         initConfig(jsonConf);
-        if (!isLocal) {
-            loadParts = 256;
-            indexDataType = args[1].split(";")[0];
-            queryDataType = args[1].split(";")[1];
-//            cellNum = Integer.parseInt(args[2]);
-            partitionerStr = args[2].split(";")[0];
-            partitionNum = Integer.parseInt(args[2].split(";")[1]);
-//            localIndex=args[2];
-        }
+        indexDataType = args[1].split(";")[0];
+        queryDataType = args[1].split(";")[1];
+        partitionerStr = args[2].split(";")[0];
+        partitionNum = Integer.parseInt(args[2].split(";")[1]);
         initIndexes();
-        STRtree strTree = new STRtree();
-        System.out.println("[mylog]:"+strTree.getItemsNum());
+        if (STRtree.class.getDeclaredMethod("getItemsNum")==null) throw new Exception("[mylog] strTree doesn't has getItemsNum method");
 
         // load data
         long startLoadT = System.currentTimeMillis();
@@ -163,7 +149,7 @@ public class spatialJoinTest
         loadTime = endLoadT-startLoadT;
 
         // spatial Partition
-        PartitionUtil partitionUtil = new PartitionUtil(partitionerType,partitionNum,cellNum,alpha,indexDataSampleRate,queryDataSampleRate);
+        PartitionUtil partitionUtil = new PartitionUtil(partitionerType,partitionNum,cellNum,alpha);
         partitionUtil.analysis(indexRDD,queryRDD);
 //        System.exit(0);
         long endAnalysisT = System.currentTimeMillis();
@@ -184,10 +170,6 @@ public class spatialJoinTest
         long endIndexT = System.currentTimeMillis();
         indexTime = endIndexT - endPartitionT;
 
-        if (isCache) {
-            indexRDD.indexedRDD.persist(StorageLevel.MEMORY_ONLY());
-            queryRDD.spatialPartitionedRDD.persist(StorageLevel.MEMORY_ONLY());
-        }
         long endCacheT = System.currentTimeMillis();
         cacheTime = endCacheT-endIndexT;
 
@@ -222,22 +204,13 @@ public class spatialJoinTest
 
     public static void initConfig(JSONObject jsonConf){
 
-        if (!isLocal) {
-            buildSparkContext(false);
-            homePath = "/home/yxy/data/spatialJoin/";
-            poisPath = homePath+"osm21_pois.csv";
-            roadsPath = homePath+"roads.csv";
-            parksPath = homePath+"parks_polygon.csv";
-            lakesPath = homePath+"lakes_polygon.csv";
-            buildingsPath = homePath+"buildings.csv";
-        } else {
-            buildSparkContext(true);
-            homePath = "D:\\data\\spatialJoin\\";
-            poisPath = homePath+"osm21_pois_WKT_1000k.csv";
-            roadsPath = homePath+"roads_1M.csv";
-            parksPath = homePath+"parks_id_100k.csv";
-            lakesPath = homePath+"lakes_id_100k.csv";
-        }
+        buildSparkContext(false);
+        dataPath = jsonConf.getString("dataPath");
+        poisPath = dataPath+"osm21_pois.csv";
+        roadsPath = dataPath+"roads.csv";
+        parksPath = dataPath+"parks_polygon.csv";
+        lakesPath = dataPath+"lakes_polygon.csv";
+        buildingsPath = dataPath+"buildings.csv";
         indexDataType = jsonConf.getString("indexDataType");
         queryDataType = jsonConf.getString("queryDataType");
         spatialPredicate = jsonConf.getString("spatialPredicate");
@@ -245,10 +218,7 @@ public class spatialJoinTest
         partitionNum = jsonConf.getIntValue("partitionNum");
         partitionerStr = jsonConf.getString("partitioner");
         localIndex = jsonConf.getString("localIndex");
-        isCache = jsonConf.getBooleanValue("isCache");
         alpha = jsonConf.getDouble("alpha");
-        indexDataSampleRate = jsonConf.getDouble("indexDataSampleRate");
-        queryDataSampleRate = jsonConf.getDouble("queryDataSampleRate");
         if (spatialPredicate.equals("contain")){ considerBoundaryIntersection = false; }
     }
 
@@ -268,9 +238,6 @@ public class spatialJoinTest
                 break;
             case "CIBP":
                 partitionerType = PartitionerType.CIBPartitioner;
-                break;
-            case "ADP":
-                partitionerType = PartitionerType.ADP;
                 break;
         }
         switch (localIndex) {
@@ -360,36 +327,6 @@ public class spatialJoinTest
         double r_N_Nc = DataStatisticsUtils.getPearsonCorrelationScore(itemsNum,toRefineNum);
         double filteringPCCs = DataStatisticsUtils.getPearsonCorrelationScore(filterCost,filterTime);
         double refinementPCCs = DataStatisticsUtils.getPearsonCorrelationScore(refineCost,refineTime);
-//        double trueCostCV = DataStatisticsUtils.getCoefficientVariation(refineCost);
-//        ArrayList<Tuple2<Double,Double>> costTimePCCsList = new ArrayList<>();
-//        double estimatedCostTureCostPCCs=-1;
-//        double trueCostCV = -1;
-//        for (int i=0;i<=10;i+=1) {
-//            double alpha=0.01*i;
-//            List<Double> joinCosts = DataStatisticsUtils.combine(filterCost, refineCost, alpha);
-//            double costTimePCCs = DataStatisticsUtils.getPearsonCorrelationScore(joinCosts,joinTimes);
-//            if (i==2) {
-//                estimatedCostTureCostPCCs = DataStatisticsUtils.getPearsonCorrelationScore(estimatedCosts,joinCosts);
-//                trueCostCV = DataStatisticsUtils.getCoefficientVariation(joinCosts);
-//            }
-//            costTimePCCsList.add(new Tuple2<>(alpha, costTimePCCs));
-//        }
-//
-//        for (double alpha=0.2;alpha<=1;alpha+=0.1) {
-//            List<Double> joinCost = DataStatisticsUtils.combine(filterCost, refineCost, alpha);
-//            double costTimePCCs = DataStatisticsUtils.getPearsonCorrelationScore(joinCost,joinTimes);
-//            costTimePCCsList.add(new Tuple2<>(alpha, costTimePCCs));
-//        }
-
-//        System.out.println("PCCs:"+PCCs+" estimatedCostCV: "+estimatedCostCV+" refineCostCV: "+refineCostCV+" joinTimeCV: "+joinTimeCV);
-
-//        double joinPCCs = DataStatisticsUtils.getPearsonCorrelationScore(joinCost,refineTime);
-//        double timePCCs = DataStatisticsUtils.getPearsonCorrelationScore(refineTime,joinTime);
-//        double costPCCs = DataStatisticsUtils.getPearsonCorrelationScore(estimatedCost,refineCost);
-//        double numPCCs = DataStatisticsUtils.getPearsonCorrelationScore(itemsNum,joinTime);
-//        double[] filterCostNormal = DataStatisticsUtils.getNormalized(filterCost);
-//        double[] refineCostNormal = DataStatisticsUtils.getNormalized(refineCost);
-//        ArrayList<Tuple2<Double,Double>> fusionCostPCCsList = new ArrayList<>();
 
         String resultStr = ("************************ resultStatistic ************************"
                 + "\nindexDataType: " + indexDataType
@@ -398,11 +335,8 @@ public class spatialJoinTest
                 + "\npartitionerType: " + partitionerType
                 + "\nlocalIndexType: " + localIndexType
                 + "\npartitionerSize: "+ partitionerSize
-                + "\nisCache: " + isCache
                 + "\ncellNum: " + cellNum
                 + "\nalpha: " + alpha
-                + "\nindexDataSampleRate: " + indexDataSampleRate
-                + "\nqueryDataSampleRate: " + queryDataSampleRate
                 + "\nresultNum:" + resultNum
                 + "\ntotalTime: " + totalTime + "ms"
                 + "\nloadTime: " + loadTime + "ms"
@@ -446,17 +380,15 @@ public class spatialJoinTest
 //        System.out.println(refinePCCs);
 //        System.out.println(refinePCCs2);
 
-        if (!isLocal) {
-            SimpleDateFormat dataFormat = new SimpleDateFormat("MMddHHmm");
-            String timestamp = dataFormat.format(new Date());
-            if (partitionerStr.equals("CIBPartitioner")) {
-                filePath = "/home/yxy/CIBPartitioner/result/"+indexDataType+"-"+queryDataType+"-"+partitionerStr+"-"+localIndex+"-"+cellNum+"-"+partitionNum+"-"+timestamp+".txt";
-            } else {
-                filePath = "/home/yxy/CIBPartitioner/result/"+indexDataType+"-"+queryDataType+"-"+partitionerStr+"-"+localIndex+"-"+timestamp+".txt";
-            }
-            try (BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(filePath))) {
-                bufferedWriter.write(resultStr);
-            }
+        SimpleDateFormat dataFormat = new SimpleDateFormat("MMddHHmm");
+        String timestamp = dataFormat.format(new Date());
+        if (partitionerStr.equals("CIBPartitioner")) {
+            filePath = "/home/yxy/CIBPartitioner/resultICDE/"+indexDataType+"-"+queryDataType+"-"+partitionerStr+"-"+localIndex+"-"+cellNum+"-"+partitionNum+"-"+timestamp+".txt";
+        } else {
+            filePath = "/home/yxy/CIBPartitioner/resultICDE/"+indexDataType+"-"+queryDataType+"-"+partitionerStr+"-"+localIndex+"-"+timestamp+".txt";
+        }
+        try (BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(filePath))) {
+            bufferedWriter.write(resultStr);
         }
 
     }

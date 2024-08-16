@@ -1,0 +1,13 @@
+{
+  "//":"partitioner: quadTree/KDBTree/voronoi/CIBP;",
+  "//": "localIndex: RTree/quadTree;",
+  "dataPath": "/home/yxy/data/spatialJoin/",
+  "indexDataType": "parks",
+  "queryDataType": "lakes",
+  "spatialPredicate": "intersect",
+  "partitioner": "CIBP",
+  "localIndex": "RTree",
+  "partitionNum": 10,
+  "cellNum": 2000,
+  "alpha": 0.1
+}

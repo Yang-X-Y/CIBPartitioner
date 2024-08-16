@@ -19,9 +19,6 @@
 
 package cn.edu.whu.spatialJoin.serde;
 
-import cn.edu.whu.spatialJoin.JTS.GridLineString;
-import cn.edu.whu.spatialJoin.JTS.GridPoint;
-import cn.edu.whu.spatialJoin.JTS.GridPolygon;
 import cn.edu.whu.spatialJoin.geometryObjects.Circle;
 import cn.edu.whu.spatialJoin.geometryObjects.GeometrySerde;
 import cn.edu.whu.spatialJoin.geometryObjects.SpatialIndexSerde;
@@ -52,9 +49,6 @@ public class StdeKryoRegistrator
         kryo.register(GeometryCollection.class, serializer);
         kryo.register(Circle.class, serializer);
         kryo.register(Envelope.class, serializer);
-        kryo.register(GridPoint.class, serializer);
-        kryo.register(GridLineString.class, serializer);
-        kryo.register(GridPolygon.class, serializer);
         // TODO: Replace the default serializer with default spatial index serializer
         kryo.register(Quadtree.class, indexSerializer);
         kryo.register(STRtree.class, indexSerializer);

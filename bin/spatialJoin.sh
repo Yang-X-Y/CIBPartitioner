@@ -14,6 +14,4 @@ function spatialJoin(){
     /home/yxy/spatialJoin/grid-based-spatial-join-1.0-SNAPSHOT.jar "${joinMode}" "240" "20"
 }
 
-joinMode="geospark"
-
 eval spatialJoin

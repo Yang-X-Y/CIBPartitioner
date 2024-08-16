@@ -19,7 +19,7 @@ public class CIBPartitioner extends SpatialPartitioner {
     private Map<CIBPTree.Node, Integer> partitionIds;
 
     public CIBPartitioner(CIBPTree.Node root) {
-        super(PartitionerType.GRIDKDBTREE, getLeafZones(root));
+        super(PartitionerType.CIBPartitioner, getLeafZones(root));
         this.root = root;
         this.partitionIds = new HashMap<>();
         collectPartitions();

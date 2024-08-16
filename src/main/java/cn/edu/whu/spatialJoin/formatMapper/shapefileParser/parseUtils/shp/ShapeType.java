@@ -101,16 +101,6 @@ public enum ShapeType
                 return new PolygonParser(geometryFactory);
             case MULTIPOINT:
                 return new MultiPointParser(geometryFactory);
-            case GRIDPOINT:
-                return new GridPointParser(geometryFactory);
-            case GRIDLINESTRING:
-                return new GridLineStringParser(geometryFactory);
-            case GRIDPOLYGON:
-                return new GridPolygonParser(geometryFactory);
-            case TRAJECTORY:
-                return new TrajectoryParser(geometryFactory);
-            case GRIDTRAJECTORY:
-                return new GridTrajectoryParser(geometryFactory);
             default:
                 throw new TypeUnknownException(id);
         }

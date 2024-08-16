@@ -19,8 +19,6 @@
 
 package cn.edu.whu.spatialJoin.spatialRDD;
 
-import cn.edu.whu.spatialJoin.JTS.Grid;
-import cn.edu.whu.spatialJoin.JTS.GridPolygon;
 import cn.edu.whu.spatialJoin.geometryObjects.GeoJSONWriterNew;
 import cn.edu.whu.spatialJoin.spatialPartitioning.*;
 import cn.edu.whu.spatialJoin.spatialPartitioning.KDB.KDBTreePartitioner;
@@ -194,22 +192,6 @@ public class SpatialRDD<T extends Geometry>
         return true;
     }
 
-    /**
-     * @return gridRDD
-     * @throws Exception the exception
-     */
-    public void objectGridId()
-            throws Exception {
-        System.out.println("objectGridId:"+this.rawSpatialRDD.first());
-        JavaRDD gridRDD = this.rawSpatialRDD.map(new Function<T, Grid[]>() {
-            public Grid[] call(T geometry) {
-                System.out.println(Arrays.toString(((GridPolygon) geometry).getGrids()));
-                return ((GridPolygon) geometry).getGrids();
-//                return AdaptiveGrid.transformGridGeometry(geometry);
-            }
-        });
-        System.out.println("gridRDD:"+gridRDD.first().getClass());
-    }
 
     /**
      * Spatial partitioning.

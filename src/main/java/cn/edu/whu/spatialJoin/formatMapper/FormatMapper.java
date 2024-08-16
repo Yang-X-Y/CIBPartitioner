@@ -19,10 +19,6 @@
 
 package cn.edu.whu.spatialJoin.formatMapper;
 
-import cn.edu.whu.spatialJoin.JTS.GridGeometryTransformer;
-import cn.edu.whu.spatialJoin.JTS.GridLineString;
-import cn.edu.whu.spatialJoin.JTS.GridPoint;
-import cn.edu.whu.spatialJoin.JTS.GridPolygon;
 import cn.edu.whu.spatialJoin.enums.FileDataSplitter;
 import cn.edu.whu.spatialJoin.enums.GeometryType;
 import org.apache.log4j.Logger;
@@ -171,20 +167,6 @@ public class FormatMapper<T extends Geometry>
         String geometryId = columns[0];
         Geometry geometry = wktReader.read(columns[1]);
         if (!geometry.isValid()) return null; // JTS doesn't support not valid objects.
-        //如果是GridGeometry类型，但是得到的却是Geometry类型，则需要动态转换
-        if (geometryType == GeometryType.GRIDPOINT && !(geometry instanceof GridPoint) && geometry instanceof Point)
-            geometry = GridGeometryTransformer.transformPoint((Point) geometry, geometryId,24);
-        if (geometryType == GeometryType.GRIDLINESTRING && !(geometry instanceof GridLineString) && geometry instanceof LineString)
-//            geometry = GridGeometryTransformer.transformLineString((LineString) geometry,geometryId,10);
-            geometry = new GridLineString(((LineString) geometry).getCoordinateSequence(), geometry.getFactory(),(byte) 20);;
-        if (geometryType == GeometryType.GRIDPOLYGON && !(geometry instanceof GridPolygon) && geometry instanceof Polygon)
-            geometry = GridGeometryTransformer.transformPolygon((Polygon) geometry,geometryId,10);
-
-        if ((geometryType == GeometryType.GRIDPOINT && !(geometry instanceof GridPoint))
-                || (geometryType == GeometryType.GRIDLINESTRING && !(geometry instanceof GridLineString))
-                || (geometryType == GeometryType.GRIDPOLYGON && !(geometry instanceof GridPolygon))) {
-            throw new RuntimeException("the geometryType is " + geometryType + ", but the class of geometry is " + geometry.getClass());
-        }
 
         return geometry;
     }

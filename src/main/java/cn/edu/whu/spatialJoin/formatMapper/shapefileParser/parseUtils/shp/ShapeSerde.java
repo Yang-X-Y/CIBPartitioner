@@ -19,7 +19,6 @@
 
 package cn.edu.whu.spatialJoin.formatMapper.shapefileParser.parseUtils.shp;
 
-import cn.edu.whu.spatialJoin.JTS.*;
 import com.esotericsoftware.kryo.io.Input;
 import org.apache.log4j.Logger;
 import org.locationtech.jts.geom.*;
@@ -57,26 +56,6 @@ public class ShapeSerde {
     private static final Logger log = Logger.getLogger(ShapeSerde.class);
 
     public static byte[] serialize(Geometry geometry) {
-
-        if (geometry instanceof GridTrajectory) {
-            return serialize((GridTrajectory) geometry);
-        }
-
-        if (geometry instanceof Trajectory) {
-            return serialize((Trajectory) geometry);
-        }
-
-        if (geometry instanceof GridPoint) {
-            return serialize((GridPoint) geometry);
-        }
-
-        if (geometry instanceof GridPolygon) {
-            return serialize((GridPolygon) geometry);
-        }
-
-        if (geometry instanceof GridLineString) {
-            return serialize((GridLineString) geometry);
-        }
 
         if (geometry instanceof Point) {
             return serialize((Point) geometry);
@@ -131,16 +110,6 @@ public class ShapeSerde {
         return buffer.array();
     }
 
-    private static byte[] serialize(GridPoint point) {
-        ByteBuffer buffer = newBuffer(POINT_LENGTH + POINT_GRID_LENGTH);
-        putType(buffer, ShapeType.GRIDPOINT);
-        buffer.putDouble(point.getX());
-        buffer.putDouble(point.getY());
-        buffer.put(point.getGrids()[0].getLevel());
-        buffer.putLong(point.getGrids()[0].getGridID());
-
-        return buffer.array();
-    }
 
     private static void putType(ByteBuffer buffer, ShapeType type) {
         buffer.put((byte) type.getId());
@@ -172,42 +141,6 @@ public class ShapeSerde {
         putHeader(buffer, ShapeType.POLYLINE, numPoints, 1);
         buffer.putInt(0);
         putPoints(buffer, lineString);
-        return buffer.array();
-    }
-
-    private static byte[] serialize(Trajectory trajectory) {
-        int numPoints = trajectory.getNumPoints();
-
-        ByteBuffer buffer = newBuffer(calculateTrajectoryBufferSize(numPoints, 1));
-        putHeader(buffer, ShapeType.TRAJECTORY, numPoints, 1);
-        buffer.putInt(0);
-        putTrajectoryPoints(buffer, trajectory);
-        return buffer.array();
-    }
-
-    private static byte[] serialize(GridTrajectory gridTrajectory) {
-        int numPoints = gridTrajectory.getNumPoints();
-        int numGrids = gridTrajectory.gridIDs.length;
-
-        ByteBuffer buffer = newBuffer(calculateGridTrajectoryBufferSize(numPoints, 1, numGrids));
-        putHeader(buffer, ShapeType.GRIDTRAJECTORY, numPoints, 1);
-        buffer.putInt(0);
-        putTrajectoryPoints(buffer, gridTrajectory);
-        buffer.putInt(numGrids);
-        putGrids(buffer, gridTrajectory.gridIDs, gridTrajectory.level);
-        return buffer.array();
-    }
-
-    private static byte[] serialize(GridLineString lineString) {
-        int numPoints = lineString.getNumPoints();
-        int numGrids = lineString.gridIDs.length;
-
-        ByteBuffer buffer = newBuffer(calculateBufferSize(numPoints, 1, numGrids));
-        putHeader(buffer, ShapeType.GRIDLINESTRING, numPoints, 1);
-        buffer.putInt(0);
-        putPoints(buffer, lineString);
-        buffer.putInt(numGrids);
-        putGrids(buffer, lineString.gridIDs, lineString.level);
         return buffer.array();
     }
 
@@ -261,21 +194,6 @@ public class ShapeSerde {
         putHeader(buffer, ShapeType.POLYGON, numPoints, numRings);
         putRingOffsets(buffer, polygon, 0);
         putPolygonPoints(buffer, polygon);
-        return buffer.array();
-    }
-
-    private static byte[] serialize(GridPolygon polygon) {
-        int numRings = polygon.getNumInteriorRing() + 1;
-        int numPoints = polygon.getNumPoints();
-        int numGrids = polygon.getGrids().length;
-
-        ByteBuffer buffer = newBuffer(calculateBufferSizePolygon(numPoints, numRings, numGrids));
-        putHeader(buffer, ShapeType.GRIDPOLYGON, numPoints, numRings);
-        putRingOffsets(buffer, polygon, 0);
-        putPolygonPoints(buffer, polygon);
-        buffer.putInt(numGrids);
-        putGrids(buffer, polygon.getGrids(), true);
-
         return buffer.array();
     }
 
@@ -336,37 +254,6 @@ public class ShapeSerde {
             Point point = geometry.getPointN(i);
             buffer.putDouble(point.getX());
             buffer.putDouble(point.getY());
-        }
-    }
-
-    private static void putTrajectoryPoints(ByteBuffer buffer, Trajectory geometry) {
-        int numPoints = geometry.getCoordinateSequence().size();
-        for (int i = 0; i < numPoints; i++) {
-            Coordinate coordinate = geometry.getCoordinateN(i);
-            buffer.putDouble(coordinate.getX());
-            buffer.putDouble(coordinate.getY());
-            buffer.putDouble(coordinate.getZ());
-        }
-    }
-
-    private static void putTrajectoryPoints(ByteBuffer buffer, GridTrajectory geometry) {
-        int numPoints = geometry.getCoordinateSequence().size();
-        for (int i = 0; i < numPoints; i++) {
-            Coordinate coordinate = geometry.getCoordinateN(i);
-            buffer.putDouble(coordinate.getX());
-            buffer.putDouble(coordinate.getY());
-            buffer.putDouble(coordinate.getZ());
-        }
-    }
-
-    private static void putGrids(ByteBuffer buffer, Grid[] grid, boolean withContain) {
-        int numGrids = grid.length;
-        for (int i = 0; i < numGrids; i++) {
-            buffer.put(grid[i].getLevel());
-            buffer.putLong(grid[i].getGridID());
-            if (withContain) {
-                buffer.putInt(grid[i].isContainGrid() ? 1 : 0);
-            }
         }
     }
 

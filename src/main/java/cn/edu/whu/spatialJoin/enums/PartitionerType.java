@@ -51,21 +51,9 @@ public enum PartitionerType
     VORONOI,
 
     /**
-     * grid quad tree partitioning
-     */
-    GRIDQUADTREE,
-
-    /**
-     * grid kdb tree partitioning
-     */
-    GRIDKDBTREE,
-
-    /**
      * grid cost kdb tree partitioning
      */
-    CIBPartitioner,
-
-    ADP;
+    CIBPartitioner;
 
     /**
      * Gets the grid type.
