@@ -7,7 +7,7 @@
   "spatialPredicate": "intersect",
   "partitioner": "CIBP",
   "localIndex": "RTree",
-  "partitionNum": 10,
+  "partitionNum": 1024,
   "cellNum": 2000,
   "alpha": 0.1
 }
