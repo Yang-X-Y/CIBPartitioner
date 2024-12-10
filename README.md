@@ -1,4 +1,4 @@
-# CIBPartitioner
+# CIBPartitioner: A computational intensity-balanced partitioner for enhancing distributed spatial join processing
 ## 1 Datasets
 
 Download datasets from https://star.cs.ucr.edu/.
